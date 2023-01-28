@@ -1,41 +1,50 @@
 # Shutdown
 
-Shutdown package aims to gracefully shut down a given function.
+Shutdown package aims to gracefully shut down a given function with configurable options.
+
+## Options
+
+`shutdown.New()` accepts a collection of `shutdown.Options` listed bellow :
+
+- `shutdown.WithContext()` pass a parent context.
+- `shutdown.WithTimeExpiration()` set up a timeout so shutdown functions won't hang up the system.
+- `shutdown.WithSignals()` configure `os.Signal` to be triggered as shutdown event
 
 # Usage
 
-Any function requiring graceful shutdown shall be registered with `Shutdown.Register()`.
+Any function requiring graceful shutdown shall be registered through `Shutdown.Register()`. These 
+functions must implement `shutdown.Closable` which is a `func() error` type that fit perfectly 
+with `io.Closer` interface.
 
-These functions are triggered if system receives at least one `os.Signal` configured as
-parameters of `shutdown.New()`. 
+`os.Interrupt` and `syscall.SIGTERM` are listened by default if no signals configured with `shutdown.WithSignals()`.
 
-`os.Interrupt` and `syscall.SIGTERM` are listened by default if no signals configured.
-
-A timeout of 10 seconds is set by default to make sure that shutdown functions won’t
-hang up the system. This duration can be changed through `Shutdown.SetExpiration()`.
+No timeout is set by default.
 
 ```go
 package main
 
 import (
+	"context"
+	"log"
+	"net/http"
+
 	"github.com/jkuma/shutdown"
 )
 
-type ServiceA struct {
-	Closed bool
-}
-
-func (s *ServiceA) Close() error {
-	s.Closed = true
-	return nil
-}
-
 func main() {
-	sa := &ServiceA{}
-	shut := New().Register(sa.Close)
+	ctx := context.Background()
+	server := &http.Server{}
 
-	shut.Process(func() {
-		// Do stuff...
+	httpshut := func() error {
+		return server.Shutdown(ctx)
+	}
+
+	shut := shutdown.New(shutdown.WithContext(ctx)).Register(httpshut)
+
+	shut.RunGraceful(func() {
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatal(err)
+		}
 	})
 }
 ```
