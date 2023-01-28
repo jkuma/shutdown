@@ -1,4 +1,4 @@
-# Shutdown [![Go Report Card](https://goreportcard.com/badge/github.com/jkuma/shutdown)](https://goreportcard.com/report/github.com/jkuma/shutdown)
+# Shutdown [![Go Report Card](https://goreportcard.com/badge/github.com/jkuma/shutdown)](https://goreportcard.com/report/github.com/jkuma/shutdown) [![Coverage Status](https://coveralls.io/repos/github/jkuma/shutdown/badge.svg?branch=main)](https://coveralls.io/github/jkuma/shutdown?branch=main)
 
 Shutdown package aims to gracefully shut down a given function with configurable options.
 
