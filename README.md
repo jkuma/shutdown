@@ -1,10 +1,10 @@
-# Shutdown
+# Shutdown [![Go Report Card](https://goreportcard.com/badge/github.com/jkuma/shutdown)](https://goreportcard.com/report/github.com/jkuma/shutdown)
 
 Shutdown package aims to gracefully shut down a given function with configurable options.
 
 ## Options
 
-`shutdown.New()` accepts a collection of `shutdown.Options` listed bellow :
+`shutdown.New()` accepts a collection of `shutdown.Options` as listed bellow :
 
 - `shutdown.WithContext()` pass a parent context.
 - `shutdown.WithLogger()` pass a custom logger implementing `shutdown.Logger`.
