@@ -1,11 +1,14 @@
-package shutdown
+package shutdown_test
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jkuma/shutdown"
 )
 
 type ServiceA struct {
@@ -27,12 +30,12 @@ func (s *ServiceB) Shutdown() error {
 	return nil
 }
 
-func TestShutdown_Process(t *testing.T) {
+func TestShutdown_RunGraceful(t *testing.T) {
 	sa := &ServiceA{}
 	sb := &ServiceB{}
 
-	shut := New(syscall.SIGIO).
-		SetExpiration(1*time.Second).
+	shut := shutdown.
+		New(shutdown.WithSignals(syscall.SIGIO)).
 		Register(sa.Close, sb.Shutdown)
 
 	p, err := os.FindProcess(syscall.Getpid())
@@ -46,7 +49,7 @@ func TestShutdown_Process(t *testing.T) {
 		}
 	}()
 
-	shut.Process(func() {
+	shut.RunGraceful(func() {
 		time.Sleep(200 * time.Millisecond)
 	})
 
@@ -59,13 +62,36 @@ func TestShutdown_Process(t *testing.T) {
 	}
 }
 
-func TestShutdown_SetExpiration(t *testing.T) {
+func TestShutdown_RunGracefulNoOptions(t *testing.T) {
+	shutdown.New().RunGraceful(func() {
+		time.Sleep(1 * time.Nanosecond)
+	})
+}
+
+func TestShutdown_RunGracefulWithParentContext(t *testing.T) {
+	var run bool
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	shut := shutdown.New(shutdown.WithContext(ctx))
+	cancel()
+
+	shut.RunGraceful(func() {
+		run = true
+	})
+
+	if run {
+		t.Errorf("Main function shall be ")
+	}
+}
+
+func TestShutdown_RunGracefulWithExpiration(t *testing.T) {
 	if os.Getenv("BE_CRASHER") == "1" {
 		sa := &ServiceA{}
 		sb := &ServiceB{}
 
-		shut := New(syscall.SIGIO).
-			SetExpiration(0).
+		shut := shutdown.
+			New(shutdown.WithSignals(syscall.SIGIO), shutdown.WithTimeExpiration(1*time.Nanosecond)).
 			Register(sa.Close, sb.Shutdown)
 
 		p, err := os.FindProcess(syscall.Getpid())
@@ -79,7 +105,7 @@ func TestShutdown_SetExpiration(t *testing.T) {
 			}
 		}()
 
-		shut.Process(func() {
+		shut.RunGraceful(func() {
 			time.Sleep(300 * time.Millisecond)
 		})
 
@@ -92,7 +118,7 @@ func TestShutdown_SetExpiration(t *testing.T) {
 	// The os.Exit(1) code is due to gracefully shutdown timeout.
 	//
 	// https://go.dev/talks/2014/testing.slide#23
-	cmd := exec.Command(os.Args[0], "-test.run=TestShutdown_SetExpiration")
+	cmd := exec.Command(os.Args[0], "-test.run=TestShutdown_RunGracefulWithExpiration")
 	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
 	err := cmd.Run()
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
