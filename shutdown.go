@@ -2,8 +2,6 @@ package shutdown
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -19,6 +17,7 @@ type Closable func() error
 
 func New(opts ...Option) *Shutdown {
 	option := parseOptions(opts...)
+	option.init()
 
 	return &Shutdown{
 		Option: option,
@@ -55,13 +54,13 @@ func (s *Shutdown) RunGraceful(fn func()) {
 	case <-ctx.Done():
 		return
 	case <-signalReceived:
-		fmt.Println("Shutdown gracefully...")
+		s.log().Println("Shutdown gracefully...")
 
 		var wg sync.WaitGroup
 
 		if s.timeout() > 0 {
 			timeoutFunc := time.AfterFunc(s.timeout(), func() {
-				log.Fatalf("Timeout %d ms has been elapsed, force exit", s.timeout().Milliseconds())
+				s.log().Fatalf("Timeout %d ms has been elapsed, force exit", s.timeout().Milliseconds())
 			})
 			defer timeoutFunc.Stop()
 		}
@@ -72,13 +71,13 @@ func (s *Shutdown) RunGraceful(fn func()) {
 				defer wg.Done()
 
 				if err := fn(); err != nil {
-					log.Printf("Service could not be closed: %s", err)
+					s.log().Fatalf("Service could not be closed: %s", err)
 				}
 			}(function)
 		}
 
 		wg.Wait()
 
-		fmt.Println("Shutdown gracefully done")
+		s.log().Println("Shutdown gracefully done")
 	}
 }

@@ -7,10 +7,11 @@ Shutdown package aims to gracefully shut down a given function with configurable
 `shutdown.New()` accepts a collection of `shutdown.Options` listed bellow :
 
 - `shutdown.WithContext()` pass a parent context.
-- `shutdown.WithTimeExpiration()` set up a timeout so shutdown functions won't hang up the system.
+- `shutdown.WithLogger()` pass a custom logger implementing `shutdown.Logger`.
 - `shutdown.WithSignals()` configure `os.Signal` to be triggered as shutdown event
+- `shutdown.WithTimeExpiration()` set up a timeout so shutdown functions won't hang up the system.
 
-# Usage
+## Usage
 
 Any function requiring graceful shutdown shall be registered through `Shutdown.Register()`. These 
 functions must implement `shutdown.Closable` which is a `func() error` type that fit perfectly 
@@ -19,6 +20,8 @@ with `io.Closer` interface.
 `os.Interrupt` and `syscall.SIGTERM` are listened by default if no signals configured with `shutdown.WithSignals()`.
 
 No timeout is set by default.
+
+`log.Default()` is set as default logger.
 
 ```go
 package main

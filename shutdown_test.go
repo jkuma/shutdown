@@ -2,6 +2,7 @@ package shutdown_test
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -62,10 +63,12 @@ func TestShutdown_RunGraceful(t *testing.T) {
 	}
 }
 
-func TestShutdown_RunGracefulNoOptions(t *testing.T) {
-	shutdown.New().RunGraceful(func() {
-		time.Sleep(1 * time.Nanosecond)
-	})
+func TestShutdown_RunGracefulWithLogger(t *testing.T) {
+	shutdown.
+		New(shutdown.WithLogger(&log.Logger{})).
+		RunGraceful(func() {
+			time.Sleep(1 * time.Nanosecond)
+		})
 }
 
 func TestShutdown_RunGracefulWithParentContext(t *testing.T) {
